@@ -2,12 +2,11 @@
 package update
 
 import (
-	"encoding/base64"
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -21,11 +20,6 @@ type Config struct {
 }
 
 const agent = "kurin/dnsupdate 1.0"
-
-func (c *Config) auth() string {
-	b := []byte(fmt.Sprintf("%s:%s", c.Username, c.Password))
-	return "Basic " + base64.StdEncoding.EncodeToString(b)
-}
 
 func (c *Config) query() string {
 	var params []string
@@ -54,14 +48,13 @@ func (c *Config) request() (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &http.Request{
-		URL:   u,
-		Close: true,
-		Header: http.Header{
-			"Authorization": []string{c.auth()},
-			"User-Agent":    []string{agent},
-		},
-	}, nil
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(c.Username, c.Password)
+	req.Header.Set("User-Agent", agent)
+	return req, nil
 }
 
 func (c *Config) Update() error {
@@ -78,6 +71,8 @@ func (c *Config) Update() error {
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("update failed: %s", resp.Status)
 	}
-	io.Copy(os.Stdout, resp.Body)
+	buf := &bytes.Buffer{}
+	io.Copy(buf, resp.Body)
+	fmt.Println(buf.String())
 	return nil
 }
