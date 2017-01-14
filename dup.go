@@ -65,5 +65,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	c.Update()
+	if err := c.Update(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
 }

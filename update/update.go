@@ -75,6 +75,9 @@ func (c *Config) Update() error {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("update failed: %s", resp.Status)
+	}
 	io.Copy(os.Stdout, resp.Body)
 	return nil
 }
